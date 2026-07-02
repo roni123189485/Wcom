@@ -1,0 +1,6 @@
+{
+  "name": "AHFI Perfume",
+  "description": "Premium Bengali landing page and quick order system for AHFI Perfume.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
