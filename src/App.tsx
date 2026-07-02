@@ -235,6 +235,33 @@ export default function App() {
       localStorage.setItem('ahfi_perfume_orders', JSON.stringify(initialOrders));
     }
 
+    // Helper to fetch orders only (used for background polling to prevent form state overwriting)
+    const fetchOrdersOnly = async () => {
+      try {
+        const { data: orderData, error: orderErr } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+        if (!orderErr && orderData) {
+          const mappedOrders: Order[] = orderData.map(o => ({
+            id: o.id,
+            name: o.name,
+            phone: o.phone,
+            address: o.address,
+            packageType: o.package_type,
+            quantity: o.quantity,
+            deliveryArea: o.delivery_area as 'inside_dhaka' | 'outside_dhaka',
+            subtotal: Number(o.subtotal),
+            deliveryCharge: Number(o.delivery_charge),
+            total: Number(o.total),
+            status: o.status as Order['status'],
+            createdAt: o.created_at
+          }));
+          setOrders(mappedOrders);
+          localStorage.setItem('ahfi_perfume_orders', JSON.stringify(mappedOrders));
+        }
+      } catch (err) {
+        console.error("Supabase fetch orders error:", err);
+      }
+    };
+
     // 2. Fetch fresh data from Supabase in the background
     const syncDataWithSupabase = async () => {
       try {
@@ -276,51 +303,20 @@ export default function App() {
         }
 
         // Fetch Orders
-        const { data: orderData, error: orderErr } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-        if (!orderErr && orderData) {
-          const mappedOrders: Order[] = orderData.map(o => ({
-            id: o.id,
-            name: o.name,
-            phone: o.phone,
-            address: o.address,
-            packageType: o.package_type,
-            quantity: o.quantity,
-            deliveryArea: o.delivery_area as 'inside_dhaka' | 'outside_dhaka',
-            subtotal: Number(o.subtotal),
-            deliveryCharge: Number(o.delivery_charge),
-            total: Number(o.total),
-            status: o.status as Order['status'],
-            createdAt: o.created_at
-          }));
-          setOrders(mappedOrders);
-          localStorage.setItem('ahfi_perfume_orders', JSON.stringify(mappedOrders));
-        } else if (!orderErr && (!orderData || orderData.length === 0)) {
-          // Seed database with current local orders if empty
-          const seedOrders = (savedOrders ? JSON.parse(savedOrders) : []) as Order[];
-          if (seedOrders.length > 0) {
-            const insertData = seedOrders.map(o => ({
-              id: o.id,
-              name: o.name,
-              phone: o.phone,
-              address: o.address,
-              package_type: o.packageType,
-              quantity: o.quantity,
-              delivery_area: o.deliveryArea,
-              subtotal: o.subtotal,
-              delivery_charge: o.deliveryCharge,
-              total: o.total,
-              status: o.status,
-              created_at: o.createdAt
-            }));
-            await supabase.from('orders').insert(insertData);
-          }
-        }
+        await fetchOrdersOnly();
       } catch (err) {
         console.error("Supabase sync error:", err);
       }
     };
 
     syncDataWithSupabase();
+
+    // Set up background polling interval to poll for orders every 15 seconds
+    const intervalId = setInterval(() => {
+      fetchOrdersOnly();
+    }, 15000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   // Save orders to local storage when updated
@@ -884,6 +880,16 @@ export default function App() {
                   </div>
                 )}
                 <div>
+                  {prod.image && (
+                    <div className="w-full aspect-[4/3] rounded-lg overflow-hidden bg-black/40 mb-3.5 border border-white/10 flex items-center justify-center">
+                      <img 
+                        src={prod.image} 
+                        alt={prod.title} 
+                        className="w-full h-full object-cover transform hover:scale-105 transition duration-500" 
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  )}
                   <h3 className="font-bold text-lg text-slate-100">{prod.title} ({prod.ml} মিলি)</h3>
                   <div className="my-3 flex items-center justify-center gap-1.5">
                     <span className="text-3xl font-extrabold text-amber-300">৳ {prod.price}</span>

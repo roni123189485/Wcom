@@ -21,6 +21,7 @@ export interface Product {
   originalPrice: number;
   description: string;
   badge?: string;
+  image?: string;
 }
 
 export interface Ingredient {

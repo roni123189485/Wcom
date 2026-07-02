@@ -92,6 +92,7 @@ export default function AdminPanel({
   const [variantOriginalPrice, setVariantOriginalPrice] = useState<number>(1650);
   const [variantDesc, setVariantDesc] = useState('');
   const [variantBadge, setVariantBadge] = useState('');
+  const [variantImage, setVariantImage] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   
   // Custom Reviews Form States
@@ -198,7 +199,8 @@ export default function AdminPanel({
       price: Number(variantPrice),
       originalPrice: Number(variantOriginalPrice),
       description: variantDesc.trim(),
-      badge: variantBadge.trim()
+      badge: variantBadge.trim(),
+      image: variantImage
     };
     setProductsState([...productsState, newVariant]);
     // Clear inputs
@@ -208,6 +210,7 @@ export default function AdminPanel({
     setVariantOriginalPrice(1650);
     setVariantDesc('');
     setVariantBadge('');
+    setVariantImage('');
     setShowAddForm(false);
     triggerAlert('নতুন প্যাকেজ তালিকায় যোগ করা হয়েছে! এটি চিরস্থায়ী করতে নিচে "প্রোডাক্ট সেটিংস ও ছবিসমূহ সংরক্ষণ করুন" বাটনে ক্লিক করুন।');
   };
@@ -220,6 +223,7 @@ export default function AdminPanel({
     setVariantOriginalPrice(prod.originalPrice);
     setVariantDesc(prod.description);
     setVariantBadge(prod.badge || '');
+    setVariantImage(prod.image || '');
     setShowAddForm(false);
   };
 
@@ -238,7 +242,8 @@ export default function AdminPanel({
           price: Number(variantPrice),
           originalPrice: Number(variantOriginalPrice),
           description: variantDesc.trim(),
-          badge: variantBadge.trim()
+          badge: variantBadge.trim(),
+          image: variantImage
         };
       }
       return p;
@@ -252,6 +257,7 @@ export default function AdminPanel({
     setVariantOriginalPrice(1650);
     setVariantDesc('');
     setVariantBadge('');
+    setVariantImage('');
     triggerAlert('প্যাকেজটি আপডেট করা হয়েছে! এটি চিরস্থায়ী করতে নিচে "প্রোডাক্ট সেটিংস ও ছবিসমূহ সংরক্ষণ করুন" বাটনে ক্লিক করুন।');
   };
 
@@ -947,6 +953,55 @@ export default function AdminPanel({
                                   placeholder="যেমন: বেস্ট সেলার"
                                 />
                               </div>
+
+                              <div className="sm:col-span-2 space-y-1.5 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                                <label className="block text-xs font-bold text-slate-700">প্যাকেজ ছবি (Package Image - ঐচ্ছিক)</label>
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                                  {variantImage ? (
+                                    <div className="relative w-20 h-20 rounded-xl border border-slate-200 overflow-hidden bg-slate-100 shrink-0 mx-auto sm:mx-0">
+                                      <img src={variantImage} className="w-full h-full object-cover" alt="Package preview" />
+                                      <button
+                                        type="button"
+                                        onClick={() => setVariantImage('')}
+                                        className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full hover:bg-red-700 transition shadow-md"
+                                        title="ছবি মুছুন"
+                                      >
+                                        <X className="w-3.5 h-3.5 stroke-[3]" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-100 shrink-0 text-slate-400 mx-auto sm:mx-0">
+                                      <ImageIcon className="w-8 h-8 stroke-[1.5]" />
+                                    </div>
+                                  )}
+                                  <div className="flex-1 relative text-center sm:text-left">
+                                    <div className="relative inline-block">
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                              if (typeof reader.result === 'string') {
+                                                setVariantImage(reader.result);
+                                              }
+                                            };
+                                            reader.readAsDataURL(file);
+                                          }
+                                        }}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                      />
+                                      <div className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-extrabold text-xs rounded-lg transition flex items-center gap-1.5 justify-center cursor-pointer shadow-xs">
+                                        <Upload className="w-3.5 h-3.5" />
+                                        প্যাকেজ ছবি আপলোড করুন
+                                      </div>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 mt-1.5">এই নির্দিষ্ট প্যাকেজ/অফারটির জন্য আলাদা একটি ছবি আপলোড করুন (ছবি আপলোড করা ঐচ্ছিক)</p>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
 
                             <div className="flex justify-end gap-2 pt-2">
@@ -983,17 +1038,24 @@ export default function AdminPanel({
                                   {prod.badge}
                                 </span>
                               )}
-                              <div>
-                                <h4 className="font-extrabold text-slate-800 text-sm">{prod.title}</h4>
-                                <p className="text-[10px] font-bold text-red-800 mt-0.5">সাইজ: {prod.ml} মিলি (ml)</p>
-                                <div className="flex items-center gap-1.5 mt-2">
-                                  <span className="text-md font-black text-slate-800">৳ {prod.price}</span>
-                                  {prod.originalPrice > prod.price && (
-                                    <span className="text-xs text-slate-400 line-through font-mono">৳ {prod.originalPrice}</span>
-                                  )}
+                              <div className="flex gap-3">
+                                {prod.image && (
+                                  <div className="w-16 h-16 rounded-lg border border-slate-200 overflow-hidden bg-white shrink-0 shadow-xs">
+                                    <img src={prod.image} className="w-full h-full object-cover" alt={prod.title} />
+                                  </div>
+                                )}
+                                <div className="flex-1">
+                                  <h4 className="font-extrabold text-slate-800 text-sm">{prod.title}</h4>
+                                  <p className="text-[10px] font-bold text-red-800 mt-0.5">সাইজ: {prod.ml} মিলি (ml)</p>
+                                  <div className="flex items-center gap-1.5 mt-2">
+                                    <span className="text-md font-black text-slate-800">৳ {prod.price}</span>
+                                    {prod.originalPrice > prod.price && (
+                                      <span className="text-xs text-slate-400 line-through font-mono">৳ {prod.originalPrice}</span>
+                                    )}
+                                  </div>
                                 </div>
-                                <p className="text-[11px] text-slate-400 font-medium mt-1.5">{prod.description}</p>
                               </div>
+                              <p className="text-[11px] text-slate-400 font-medium mt-2">{prod.description}</p>
 
                               <div className="flex justify-end gap-1.5 mt-4 pt-3 border-t border-slate-100">
                                 <button
